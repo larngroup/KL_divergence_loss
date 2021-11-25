@@ -26,19 +26,22 @@ For more information on the subject the reader is redirected to the paper in Ref
 
 The code provided is specifically used for Variational Autoencoders. While its implementation is simple and easy to customize, some important details need to be addressed.
 
-The class Annealing_model inherits all of tensorflow.keras.Model functions and essentially behaves the same way except for the added functionality.
-Initializing the Annealing_model utilizes the same arguments as tensorflow.keras.Model and 2 more arguments as shown in the next example:
-
+The class **Annealing_model** inherits all of **tensorflow.keras.Model** functions and essentially behaves the same way except for the added functionality.
+Initializing the **Annealing_model** utilizes the same arguments as **tensorflow.keras.Model** and 2 more arguments as shown in the next example:
+```
 my_model=Annealing_model(annealing_mode,latent_distribution,*args,**kwargs)
+```
+- annealing_mode: The mode in which the annealing process will occur. Available modes are "normal", "monotonic" and "cyclical";
+- latent_distribution: A tensor of the latent space vector (after the reparameterization trick);
+- *args,**kwargs: all the remaining arguments usually used for the tensorflow.keras.Model class.
 
-annealing_mode: The mode in which the annealing process will occur. Available modes are "normal", "monotonic" and "cyclical";
-latent_distribution: A tensor of the latent space vector (after the reparameterization trick);
-*args,**kwargs: all the remaining arguments usually used for the tensorflow.keras.Model class.
+The **Annealing_model** class prepares a reconstruction loss and its respective metric, so there is no need to include as an argument in the **compile** function. In this current version the reconstruction loss, and its respective metric, are hardcoded as a categorical cross-entropy loss. To implement a different loss, the user must change the loss defined in the function **compile** defined in the **Annealing_model** class. 
 
-The Annealing_model class prepares a reconstruction loss and its respective metric, so there is no need to include as an argument in the "compile" function. In this current version the reconstruction loss, and its respective metric, are hardcoded as a categorical cross-entropy loss. To implement a different loss, the user must change the loss defined in the function "compile" in the Annealing_model class. 
+As mentioned there are currently only three modes of kl annealing. To add or change the currently implemented modes, change the function **on_epoch_end** defined in the class **AnnealingCallback**.
 
-As mentioned there are currently only three modes of kl annealing. To add or change the currently implemented modes, change the function "on_epoch_end" of the class "AnnealingCallback"
+# Requirements
 
+Tensorflow: 2.3.0
 
 
 
