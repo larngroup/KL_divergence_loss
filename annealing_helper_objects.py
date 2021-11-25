@@ -1,10 +1,13 @@
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import Model
+import time
+import sys
 
 
 class Kl_annealing_loss(tf.keras.layers.Layer):
-    def __init__(self,beta,name="loss_layer",**kwargs):
-        super().__init__(name=name)
+    def __init__(self,beta,**kwargs):
+        super().__init__(**kwargs)
         self.beta=beta
 
     def call(self,inputs):
@@ -15,19 +18,22 @@ class Kl_annealing_loss(tf.keras.layers.Layer):
         kl_loss_batch=-0.5*tf.reduce_mean(kl_loss)
         out=tf.math.multiply(self.beta,kl_loss_batch)
         return out
+      
+    def get_config(self):
+      config=super().get_config()
+      return config
+
+class My_cross_entropy(tf.keras.layers.Layer):
+    def __init__(self,name="Loss layer",**kwargs):
+        super().__init__(name=name)
+
+    def call(self,predict,ground):
+        loss_cross= tf.keras.losses.CategoricalCrossentropy(name="My_CategoricalCrossentropy")
+        m=loss_cross(ground,predict)
+
+        return m
 
 
-class My_MSE(keras.metrics.Metric):
-    def __init__(self, name="custom_mse", **kwargs):
-        super(My_MSE, self).__init__(name=name, **kwargs)
-        
-    def update_state(self, y_true, y_pred, sample_weight=None):
-        reconstruction_loss=tf.losses.mse(y_true,y_pred)
-        self.reconstruction_loss_batch=tf.reduce_mean(reconstruction_loss)
-           
-        
-    def result(self):
-        return self.reconstruction_loss_batch
 
 
 
@@ -51,12 +57,50 @@ class AnnealingCallback(tf.keras.callbacks.Callback):
             print("\n Current beta: "+str(tf.keras.backend.get_value(self.beta)))
         elif self.name=="cyclical":
             T=self.total_epochs
-            M=4
+            M=5
             frac=int(self.total_epochs/M)
-            tt=((epoch+1)%frac)/float(frac)
+            tt=((epoch)%frac)/float(frac)
             
             new_value=tt
             if new_value>1:
                 new_value=1
             tf.keras.backend.set_value(self.beta,new_value)
             print("\n Current beta: "+str(tf.keras.backend.get_value(self.beta)))
+
+
+
+class Annealing_model(Model):
+
+    def __init__(self,type_annealing,latent_space,inputs,outputs,name="Variational Autoencoder"):
+        Model.__init__(self,inputs=inputs,outputs=outputs,name=name)
+        self.type_annealing=type_annealing
+        if self.type_annealing=="normal":
+            self.beta_weight=1.0
+        else:
+            self.beta_weight=0.0
+        self.beta_var=tf.Variable(self.beta_weight,trainable=False,name="Beta_annealing",validate_shape=False)
+
+        #Generate Losses
+        kl_loss=Kl_annealing_loss(self.beta_var)(latent_space)
+
+        self.add_loss(kl_loss)
+        self.add_metric(kl_loss,name="KL Diverg. Loss",aggregation="mean")
+
+
+    def fit(self,*args,**kwargs):
+        total_epochs=kwargs["epochs"]
+
+        my_callback=AnnealingCallback(self.beta_var,self.type_annealing,total_epochs)
+
+        callbacks_list=kwargs["callbacks"]
+        callbacks_list.append(my_callback)
+        kwargs["callbacks"]=callbacks_list
+
+        return super(Annealing_model, self).fit(*args,**kwargs)
+
+    def compile(self,*args,**kwargs):
+        
+        loss_calculator=tf.keras.losses.CategoricalCrossentropy(name="My_CategoricalCrossentropy")
+        
+        my_metric = tf.keras.metrics.CategoricalCrossentropy()
+        return super(Annealing_model, self).compile(*args,**kwargs,loss=loss_calculator,metrics=[my_metric])

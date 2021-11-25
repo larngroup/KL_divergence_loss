@@ -24,58 +24,26 @@ For more information on the subject the reader is redirected to the paper in Ref
 
 # Implementation Instructions
 
-1 - Import the classes in the annealing_helper_objects.py:
+The code provided is specifically used for Variational Autoencoders. While its implementation is simple and easy to customize, some important details need to be addressed.
 
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/24720785/141499064-9db8d399-0d07-431b-bc5d-efb000474da5.png" />
-</p>
+The class Annealing_model inherits all of tensorflow.keras.Model functions and essentially behaves the same way except for the added functionality.
+Initializing the Annealing_model utilizes the same arguments as tensorflow.keras.Model and 2 more arguments as shown in the next example:
 
-2 - Outside the model building methods define the tensor representing the beta variable (beta_var):
+my_model=Annealing_model(annealing_mode,latent_distribution,*args,**kwargs)
 
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/24720785/141499290-cd990ac0-d3e1-4fd9-95ed-0cdb8b6e01d7.png" />
-</p>
+annealing_mode: The mode in which the annealing process will occur. Available modes are "normal", "monotonic" and "cyclical";
+latent_distribution: A tensor of the latent space vector (after the reparameterization trick);
+*args,**kwargs: all the remaining arguments usually used for the tensorflow.keras.Model class.
 
-3 - From the latent space distribution and beta variable generate (using the "Kl_annealing_loss" class) the loss and add the loss and its corresponding metric to the model:
+The Annealing_model class prepares a reconstruction loss and its respective metric, so there is no need to include as an argument in the "compile" function. In this current version the reconstruction loss, and its respective metric, are hardcoded as a categorical cross-entropy loss. To implement a different loss, the user must change the loss defined in the function "compile" in the Annealing_model class. 
 
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/24720785/141500648-04be2dd4-2ff9-4df2-be14-9da1bff89087.png" />
-</p>
-
-4 - Initialize custom callback and metric classes and use them in the compilation and fit methods:
-
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/24720785/141500985-f99ef9d7-c7c1-4cf5-ae2e-d7c0c34e6938.png" />
-</p>
+As mentioned there are currently only three modes of kl annealing. To add or change the currently implemented modes, change the function "on_epoch_end" of the class "AnnealingCallback"
 
 
-For implementation of custom annealing schedules directly change callback class "AnnealingCallback". 
-
-# Results
-
-As mentioned previously this framework was implemented in a simple VAE. Since the decoder is not autoregressive the potential benefits of annealing schedules will not be observable. It was implemented in a simple VAE for debugging purposes. It is expected in future work to implement this framework on autoencoders with autoregressive decoders (the intended beneficiaries).
 
 
-## Constant Schedule
 
-<p align="center" float="left">
-  <img src="https://user-images.githubusercontent.com/24720785/141502473-9950a2e2-7c81-426a-bdde-7a93f7dc6618.png" width="400" />
-  <img src="https://user-images.githubusercontent.com/24720785/141502545-b3598918-e1b9-4026-b266-2920d579a4f0.png" width="400" /> 
-</p>
 
-## Monotonic Annealing Schedule
-
-<p align="center" float="left">
-  <img src="https://user-images.githubusercontent.com/24720785/141502936-688e3d81-24c0-4333-96b3-bd70f2cf2947.png" width="400" />
-  <img src="https://user-images.githubusercontent.com/24720785/141502991-ecf330d9-be46-4d5a-b253-fad9a354ccdb.png" width="400" /> 
-</p>
-
-## Cyclical Annealing Schedule
-
-<p align="center" float="left">
-  <img src="https://user-images.githubusercontent.com/24720785/141503118-fafcc6e1-b2d6-4c40-b772-c4c965db13e0.png" width="400" />
-  <img src="https://user-images.githubusercontent.com/24720785/141503168-45633460-8be7-4270-8a04-9bb57ed2c845.png" width="400" /> 
-</p>
 
 # Reference
 
